@@ -34,28 +34,59 @@ public class JwtTokenUserInterceptor implements HandlerInterceptor {
      * @throws Exception
      */
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        //判断当前拦截到的是Controller的方法还是其他资源
         if (!(handler instanceof HandlerMethod)) {
-            //当前拦截到的不是动态方法，直接放行
             return true;
         }
 
-        //1、从请求头中获取令牌
         String token = request.getHeader(jwtProperties.getUserTokenName());
 
-        //2、校验令牌
         try {
             log.info("jwt校验:{}", token);
             Claims claims = JwtUtil.parseJWT(jwtProperties.getUserSecretKey(), token);
-            Long userId = Long.valueOf(claims.get(JwtClaimsConstant.USER_ID).toString());
-            log.info("当前用户的id：", userId);
+
+            // 没有userId，说明不是用户端签发的token（比如管理端token混进来了）
+            Object userIdObj = claims.get(JwtClaimsConstant.USER_ID);
+            if (userIdObj == null) {
+                log.warn("token缺少userId，拒绝访问");
+                response.setStatus(401);
+                return false;
+            }
+
+            Long userId = Long.valueOf(userIdObj.toString());
+            log.info("当前用户的id：{}", userId);   // 顺带修掉原来的日志bug（{}）
             BaseContext.setCurrentId(userId);
-            //3、通过，放行
             return true;
         } catch (Exception ex) {
-            //4、不通过，响应401状态码
+            log.warn("token校验失败: {}", ex.getMessage());
             response.setStatus(401);
             return false;
         }
     }
+
+//    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+//        //判断当前拦截到的是Controller的方法还是其他资源
+//        if (!(handler instanceof HandlerMethod)) {
+//            //当前拦截到的不是动态方法，直接放行
+//            return true;
+//        }
+//
+//        //1、从请求头中获取令牌
+//        String token = request.getHeader(jwtProperties.getUserTokenName());
+//
+//        //2、校验令牌
+//        try {
+//            log.info("jwt校验:{}", token);
+//            Claims claims = JwtUtil.parseJWT(jwtProperties.getUserSecretKey(), token);
+//            Long userId = Long.valueOf(claims.get(JwtClaimsConstant.USER_ID).toString());
+//            log.info("当前用户的id：", userId);
+//            BaseContext.setCurrentId(userId);
+//            //3、通过，放行
+//            return true;
+//        } catch (Exception ex) {
+//            //4、不通过，响应401状态码
+//            response.setStatus(401);
+//            return false;
+//        }
+//    }
+
 }
