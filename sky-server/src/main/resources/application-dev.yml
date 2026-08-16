@@ -5,11 +5,11 @@ sky:
     port: 3306
     database: sky_take_out
     username: root
-    password: your-access-key-id
+    password: your-db-password
   alioss:
-    endpoint:
-    access-key-id:
-    access-key-secret:
+    endpoint: your-endpoint
+    access-key-id: your-access-key-id
+    access-key-secret: your-access-key-secret
     bucket-name: sky-itcast
   redis:
     host: localhost
